@@ -1,0 +1,52 @@
+{
+  "name": "tsp",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "http://alpha-cygnus.github.io/tsp",
+  "dependencies": {
+    "classnames": "^2.2.6",
+    "events": "^3.3.0",
+    "immer": "^9.0.12",
+    "lodash": "^4.17.20",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html --public-url ./",
+    "predeploy": "yarn build",
+    "deploy": "gh-pages -d dist"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@parcel/transformer-sass": "^2.7",
+    "@types/jest": "^26.0.15",
+    "@types/lodash": "^4.14.168",
+    "@types/node": "^12.0.0",
+    "@types/react": "^16.9.53",
+    "@types/react-dom": "^16.9.8",
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^8.24",
+    "eslint-plugin-react": "^7.31",
+    "gh-pages": "^4.0",
+    "parcel": "^2.7",
+    "typescript": "^4.8"
+  }
+}

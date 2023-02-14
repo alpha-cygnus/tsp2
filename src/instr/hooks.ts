@@ -3,7 +3,10 @@ import { AParamCB } from '../audio/types';
 import { useVoice } from './ctx';
 import { ParamProxy } from './types';
 
-export function useAdsrCb(a: number, d: number, s: number, r: number): AParamCB {
+export function useAdsrCb(
+  a: number, d: number, s: number, r: number,
+  max: number = 1, del: number = 0,
+): AParamCB {
   const v = useVoice();
   const [pp] = useState(() => new ParamProxy());
   
@@ -11,8 +14,8 @@ export function useAdsrCb(a: number, d: number, s: number, r: number): AParamCB 
     const unsubs = [
       v.onStart(({time}) => {
         pp.cancel(time);
-        pp.setTarget(1, time, a / 4);
-        pp.setTarget(s, time + a, d / 4);
+        pp.setTarget(max, time + del, a / 4);
+        pp.setTarget(s, time + del + a, d / 4);
       }),
       v.onStop(({time}) => {
         pp.cancel(time);

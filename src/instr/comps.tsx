@@ -23,7 +23,7 @@ export function Voice({children}: VoiceProps) {
         {children}
       </ParamNameContext.Provider>
     </VoiceContext.Provider>
-  )
+  );
 }
 
 type ADSRProps = WithOut & {
@@ -32,16 +32,20 @@ type ADSRProps = WithOut & {
   d: number;
   s: number;
   r: number;
+  max?: number;
+  delay?: number;
   children?: WithInChildren,
 }
 
 export function ADSR({
   name,
   a, d, s, r,
+  max = 1,
+  delay = 0,
   children,
   ...without
 }: ADSRProps) {
-  const adsrCb = useAdsrCb(a, d, s, r);
+  const adsrCb = useAdsrCb(a, d, s, r, max, delay);
 
   if (children) {
     return <Gain name={name} gain={[0, adsrCb]} {...without}>
@@ -69,6 +73,7 @@ export function PolyInstr({name, voices, children}: PolyInstrProps) {
     if (vc < 1) vc = 1;
     if (vc > MAX_VOICES) vc = MAX_VOICES;
     for (let i = 0; i < vc; i++) res.push(<Voice key={i}>{children}</Voice>);
+    return res;
   }, [voices, children]);
 
   const band = useBand();
@@ -87,11 +92,21 @@ type MonoInstrProps = {
   notePrio: NotePrio;
 };
 
-export function MonoInstr({name, children}: MonoInstrProps) {
+export function MonoInstr({name, notePrio, children}: MonoInstrProps) {
   const [mi] = useState(() => new MonoInstrData());
 
   const band = useBand();
   useEffect(() => band.addInstr(name, mi), [band, name, mi]);
-  
 
+  useEffect(() => {
+    mi.notePrio = notePrio;
+  }, [mi, notePrio]);
+  
+  return (
+    <VoiceContext.Provider value={mi}>
+      <ParamNameContext.Provider value={mi}>
+        {children}
+      </ParamNameContext.Provider>
+    </VoiceContext.Provider>
+  );
 }

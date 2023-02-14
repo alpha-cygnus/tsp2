@@ -292,8 +292,8 @@ export function Scope({...rest}: ScopeProps) {
 
   const [paused, setPaused] = useState(false);
 
-  const width = 200;
-  const height = 100;
+  const width = 600;
+  const height = 300;
 
   useEffect(() => {
     if (paused) return;

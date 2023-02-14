@@ -1,6 +1,5 @@
 import {EventEmitter} from 'events';
 import { unreachable } from '../common/utils';
-import { Voice } from './comps';
 
 type VoiceEvent = 'start' | 'stop';
 
@@ -43,21 +42,13 @@ export class ParamProxy {
   }
 }
 
-type NoteOnData = {
-  time: number;
-  note: number;
-  vel: number;
-}
-
-type NoteOffData = {
-  time: number;
-  note: number;
-  vel: number;
-}
+export type InstrCmd = 
+| {on: {note: number, vel: number}}
+| {off: {note: number, vel: number}}
+| {omniOff: {vel?: number}};
 
 interface AnyInstr {
-  noteOn(data: NoteOnData): void;
-  noteOff(data: NoteOffData): void;
+  cmd(time: number, ic: InstrCmd): void;
 }
 
 export class VoiceData extends EventEmitter implements AnyInstr {
@@ -143,19 +134,30 @@ export class VoiceData extends EventEmitter implements AnyInstr {
     });
   }
 
-  noteOn({note, time, vel}: NoteOnData) {
-    this.setNote(note, time);
-    this.withParam('vel', (pp) => {
-      pp.setValue(vel, time);
-    });
-    this.start(time);
-  }
+  cmd(time: number, ic: InstrCmd): void {
+    if ('on' in ic) {
+      const {note, vel} = ic.on;
+      this.setNote(note, time);
+      this.withParam('vel', (pp) => {
+        pp.setValue(vel, time);
+      });
+      this.start(time);
+      return;
+    }
+    if ('off' in ic) {
+      const {vel} = ic.off;
+      this.withParam('relvel', (pp) => {
+        pp.setValue(vel, time);
+      });
+      this.stop(time);
+      return;
+    }
+    if ('omniOff' in ic) {
+      this.stop(time);
+      return;
+    }
 
-  noteOff({note, time, vel}: NoteOffData) {
-    this.withParam('relvel', (pp) => {
-      pp.setValue(vel, time);
-    });
-    this.stop(time);
+    unreachable(ic);
   }
 }
 
@@ -192,31 +194,49 @@ export class PolyInstrData implements AnyInstr {
     return vs[0] || null;
   }
 
-  noteOn(data: NoteOnData) {
-    const {note, time, vel} = data;
-    const cg = this.getChokeGroup(note);
+  cmdVoices(time: number, ic: InstrCmd): VoiceData[] {
+    if ('on' in ic) {
+      const {note} = ic.on;
+      const cg = this.getChokeGroup(note);
+  
+      if (this.playing.has(cg)) {
+        this.cmd(time, {off: {note, vel: 0}});
+      }
+  
+      const v = this.allocVoice();
+  
+      console.log('nom', cg, v);
+  
+      if (!v) return [];
+  
+      this.playing.set(cg, v);
+  
+      return [v];
+    }
+    if ('off' in ic) {
+      const {note} = ic.off;
 
-    if (this.playing.has(cg)) {
-      this.noteOff({time, note, vel: 0});
+      const cg = this.getChokeGroup(note);
+  
+      const v = this.playing.get(cg);
+  
+      console.log('noff', cg, v);
+  
+      if (!v) return [];
+  
+      return [v];
+    }
+    if ('omniOff' in ic) {
+      return [...this.playing.values()];
     }
 
-    const v = this.allocVoice();
-
-    if (!v) return;
-
-    v.noteOn(data);
+    unreachable(ic);
   }
 
-  noteOff(data: NoteOffData) {
-    const {note} = data;
+  cmd(time: number, ic: InstrCmd): void {
+    const vs = this.cmdVoices(time, ic);
 
-    const cg = this.getChokeGroup(note);
-
-    const v = this.playing.get(cg);
-
-    if (!v) return;
-
-    v.noteOff(data);
+    for (const v of vs) v.cmd(time, ic);
   }
 }
 
@@ -227,66 +247,96 @@ export class MonoInstrData extends VoiceData {
 
   notePrio: NotePrio = 'high';
 
-  noteOn(data: NoteOnData): void {
-    const {note, time} = data;
+  cmd(time: number, ic: InstrCmd): void {
+    if ('on' in ic) {
+      const {note} = ic.on;
+      if (!this.isStarted()) {
+        this.prevNote = note;
+        return super.cmd(time, ic);
+      }
     
-    if (!this.isStarted()) {
+      const prio = this.notePrio;
+      switch (prio) {
+        case 'first':
+          return;
+        case 'high':
+          if (note < this.prevNote) return;
+          break;
+        case 'low':
+          if (note > this.prevNote) return;
+          break;
+        case 'last':
+          break;
+        default:
+          unreachable(prio);
+      }
+
       this.prevNote = note;
-      return super.noteOn(data);
-    }
-    
-    const prio = this.notePrio;
-    switch (prio) {
-      case 'first':
-        return;
-      case 'high':
-        if (data.note < this.prevNote) return;
-        break;
-      case 'low':
-        if (data.note > this.prevNote) return;
-        break;
-      case 'last':
-        break;
-      default:
-        unreachable(prio);
+      this.setNote(note, time);
+      return;
     }
 
-    this.prevNote = note;
-    this.setNote(note, time);
+    super.cmd(time, ic);
   }
 }
 
 export class InstrProxy implements AnyInstr {
   set: Set<AnyInstr> = new Set();
 
-  noteOn(data: NoteOnData): void {
-    this.set.forEach((instr) => instr.noteOn(data));
+  name: string;
+
+  constructor (name: string) {
+    this.name = name;
   }
-  noteOff(data: NoteOffData): void {
-    this.set.forEach((instr) => instr.noteOff(data));
+
+  cmd(time: number, ic: InstrCmd): void {
+    console.log('CMD', this.name, ic, this);
+    this.set.forEach((instr) => instr.cmd(time, ic));
   }
 
   addInstr(instr: AnyInstr): () => void {
     this.set.add(instr);
+    console.log('ADD', this.name, instr);
     return () => {
       this.set.delete(instr);
+      console.log('DEL', this.name, instr);
     };
   }
 }
 
-export class BandData {
+export class BandData extends EventEmitter {
   band: Map<string, InstrProxy> = new Map();
 
-  getInstrProxy(name: string): InstrProxy {
+  emitChange() {
+    this.emit('change');
+  }
+
+  onChange(cb: () => void): () => void {
+    this.on('change', cb);
+    return () => {
+      this.off('change', cb);
+    };
+  }
+
+  getInstr(name: string): InstrProxy {
     const instr = this.band.get(name);
     if (instr) return instr;
-    const ni = new InstrProxy();
+    const ni = new InstrProxy(name);
     this.band.set(name, ni);
     return ni;
   }
 
   addInstr(name: string, instr: AnyInstr): () => void {
-    const ip = this.getInstrProxy(name);
-    return ip.addInstr(instr);
+    const ip = this.getInstr(name);
+    const fin = ip.addInstr(instr);
+    this.emitChange();
+    return () => {
+      fin();
+      this.emitChange();
+    };
+  }
+
+  getInstrNames() {
+    return [...this.band.keys()].filter((key) => this.band.get(key)!.set.size > 0);
   }
 }

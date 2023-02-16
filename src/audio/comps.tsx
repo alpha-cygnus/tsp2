@@ -1,10 +1,12 @@
 import React, {useEffect, useMemo, ReactElement, useRef, useState} from 'react';
 
+import {useACtx} from '../root/ctx';
+import {useAddParam} from '../param/ctx';
+
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
-import {NodeInContext, useAddParam, useNodeIn} from './ctx';
-import {useAnalyser, useConst, useFilter, useGain, useOsc} from './hooks';
-import {useACtx} from '../root/ctx';
+import {NodeInContext, useNodeIn} from './ctx';
+import {useAnalyser, useConst, useFilter, useGain, useOsc, usePan} from './hooks';
 
 
 type ConnProps = {
@@ -171,7 +173,6 @@ export function ParamIn({param, children, name}: ParamInProps) {
 }
 
 
-
 type OscProps = WithOut & {
   name?: string;
   type: OscillatorType,
@@ -271,87 +272,18 @@ export function From({node}: FromProps) {
   return makeConn(node, nodeIn);
 }
 
-type ADSRProps = WithOut & {
+type PanProps = WithOut & WithIn & {
   name?: string;
-  a: number;
-  d: number;
-  s: number;
-  r: number;
-  max?: number;
-  delay?: number;
-  children?: WithInChildren,
-}
-
-type ScopeProps = WithIn & WithOut & {
+  pan?: AParamProp;
 };
 
-export function Scope({...rest}: ScopeProps) {
-  const node = useAnalyser();
+export function Pan({name, pan, ...rest}: PanProps) {
+  const node = usePan();
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const [paused, setPaused] = useState(false);
-
-  const width = 600;
-  const height = 300;
-
-  useEffect(() => {
-    if (paused) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const res = new Uint8Array(node.fftSize);
-    const canvasCtx = canvas.getContext('2d');
-    if (!canvasCtx) return;
-
-    let id: number;
-    const draw = () => {
-      node.getByteTimeDomainData(res);
-
-      canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-      canvasCtx.fillRect(0, 0, width, height);
-
-      canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = 'rgb(0, 255, 0)';
-      canvasCtx.beginPath();
-
-      const sliceWidth = 1; //width * 1.0 / res.length;
-      let i0 = 0;
-      for (let i = 1; i < res.length; i++) {
-        if (res[i] >= 128 && res[i - 1] < 128) {
-          i0 = res[i] - 128 < 128 - res[i - 1] ? i : i - 1;
-          break;
-        }
-      }
-      let x = 0;
-      for (let i = 0; i <= width / sliceWidth; i++) {
-        const v = res[i + i0] / 128.0;
-        const y = v * height / 2;
-
-        if (i === 0) {
-          canvasCtx.moveTo(x, y);
-        } else {
-          canvasCtx.lineTo(x, y);
-        }
-
-        x += sliceWidth;
-      }
-      // canvasCtx.lineTo(canvas.width, canvas.height / 2);
-      canvasCtx.stroke();
-
-      id = requestAnimationFrame(draw);
-    }
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(id);
-    }
-  }, [node, paused]);
+  setNodeId(node.pan, `${getNodeId(node, name)}.pan`);
 
   return <>
     <NodeInOut node={node} {...rest} />
-    <div className="scope">
-      <canvas ref={canvasRef} width={width} height={height} onClick={() => setPaused(x => !x)} />
-    </div>
+    <ParamIn name="pan" param={node.pan}>{pan}</ParamIn>
   </>;
 }

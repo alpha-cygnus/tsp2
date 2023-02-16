@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AParamCB } from '../audio/types';
+import { ParamProxy } from '../param/types';
+
 import { useVoice } from './ctx';
-import { ParamProxy } from './types';
 
 export function useAdsrCb(
   a: number, d: number, s: number, r: number,
@@ -13,19 +14,24 @@ export function useAdsrCb(
   useEffect(() => {
     const unsubs = [
       v.onStart(({time}) => {
-        pp.cancel(time);
-        pp.setTarget(max, time + del, a / 4);
-        pp.setTarget(s, time + del + a, d / 4);
+        pp.forEach(p => p
+          .cancelAndHoldAtTime(time)
+          .setTargetAtTime(max, time + del, a / 4)
+          .setTargetAtTime(s, time + del + a, d / 4)
+        );
       }),
       v.onStop(({time}) => {
-        pp.cancel(time);
-        pp.setTarget(0, time, r / 4);
+        pp.forEach(p => p
+          .cancelAndHoldAtTime(time)
+          .setTargetAtTime(0, time, r / 4)
+        );
       }),
-    ]
+    ];
+    
     return () => {
       unsubs.forEach((u) => u());
     }
   }, [pp]);
 
-  return useMemo(() => (p) => pp.addParam(p), [pp]);
+  return useMemo(() => (p) => pp.add(p), [pp]);
 }

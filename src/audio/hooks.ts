@@ -65,3 +65,10 @@ export function useAnalyser() {
 
   return node;
 }
+
+export function usePan() {
+  const actx = useACtx();
+  const [node] = useState(actx.createStereoPanner());
+
+  return node;
+}

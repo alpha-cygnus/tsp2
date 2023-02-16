@@ -1,5 +1,7 @@
 import {EventEmitter} from 'events';
+import { ItemSet, NamedMap, WithParam } from '../common/types';
 import { unreachable } from '../common/utils';
+import { ParamContextData, ParamProxy } from '../param/types';
 
 type VoiceEvent = 'start' | 'stop';
 
@@ -9,50 +11,18 @@ type VoiceEventData = {
   time: number;
 }
 
-export class ParamProxy {
-  ps: Set<AudioParam> = new Set();
-
-  addParam(p: AudioParam): () => void {
-    this.ps.add(p);
-    return () => {
-      this.ps.delete(p);
-    }
-  } 
-
-  cancel(t: number): void {
-    this.ps.forEach((p) => {
-      if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t);
-      else p.cancelScheduledValues(t);
-    });
-  }
-  exponentialTo(value: number, endTime: number): void {
-    this.ps.forEach((p) => p.exponentialRampToValueAtTime(value, endTime));
-  }
-  linearTo(value: number, endTime: number): void {
-    this.ps.forEach((p) => p.linearRampToValueAtTime(value, endTime));
-  }
-  setTarget(target: number, startTime: number, timeConstant: number): void {
-    this.ps.forEach((p) => p.setTargetAtTime(target, startTime, timeConstant));
-  }
-  setValue(value: number, t: number): void {
-    this.ps.forEach((p) => p.setValueAtTime(value, t));
-  }
-  setValueCurve(values: number[] | Float32Array, startTime: number, duration: number): void {
-    this.ps.forEach((p) => p.setValueCurveAtTime(values, startTime, duration));
-  }
-}
-
 export type InstrCmd = 
 | {on: {note: number, vel: number}}
 | {off: {note: number, vel: number}}
 | {omniOff: {vel?: number}};
 
-interface AnyInstr {
+export interface AnyInstr extends WithParam {
   cmd(time: number, ic: InstrCmd): void;
 }
 
 export class VoiceData extends EventEmitter implements AnyInstr {
-  params: Map<string, ParamProxy> = new Map();
+  pcd: ParamContextData = new ParamContextData();
+
   startedAt: number = 0;
   stoppedAt: number = 0;
 
@@ -96,27 +66,6 @@ export class VoiceData extends EventEmitter implements AnyInstr {
     }
   }
   
-  getParam(name: string): ParamProxy {
-    let ps = this.params.get(name);
-    if (!ps) {
-      ps = new ParamProxy();
-      this.params.set(name, ps);
-    }
-    return ps;
-  }
-
-  addParam(name: string, param: AudioParam): () => void {
-    const pp = this.getParam(name);
-    pp.ps.add(param);
-    return () => {
-      pp.ps.delete(param);
-    }
-  }
-
-  withParam(name: string, cb: (pp: ParamProxy) => void): void {
-    cb(this.getParam(name));
-  }
-
   getFreq(note: number) {
     return Math.pow(2, (note - 69) / 12) * 440; 
   }
@@ -125,12 +74,16 @@ export class VoiceData extends EventEmitter implements AnyInstr {
     return (note - 69) * 100;
   }
 
+  withParam(name: string, cb: (p: AudioParam) => void) {
+    this.pcd.withEach(name, cb);
+  }
+
   setNote(note: number, time: number) {
     this.withParam('freq', (pp) => {
-      pp.setValue(this.getFreq(note), time);
+      pp.setValueAtTime(this.getFreq(note), time);
     });
     this.withParam('detune', (pp) => {
-      pp.setValue(this.getDetune(note), time);
+      pp.setValueAtTime(this.getDetune(note), time);
     });
   }
 
@@ -139,7 +92,7 @@ export class VoiceData extends EventEmitter implements AnyInstr {
       const {note, vel} = ic.on;
       this.setNote(note, time);
       this.withParam('vel', (pp) => {
-        pp.setValue(vel, time);
+        pp.setValueAtTime(vel, time);
       });
       this.start(time);
       return;
@@ -147,7 +100,7 @@ export class VoiceData extends EventEmitter implements AnyInstr {
     if ('off' in ic) {
       const {vel} = ic.off;
       this.withParam('relvel', (pp) => {
-        pp.setValue(vel, time);
+        pp.setValueAtTime(vel, time);
       });
       this.stop(time);
       return;
@@ -238,6 +191,15 @@ export class PolyInstrData implements AnyInstr {
 
     for (const v of vs) v.cmd(time, ic);
   }
+
+  paramVoices(name: string): VoiceData[] {
+    return [...this.playing.values()];
+  }
+
+  withParam(name: string, cb: (p: AudioParam) => void): void {
+    const vs = this.paramVoices(name);
+    vs.forEach((v) => v.withParam(name, cb));
+  }
 }
 
 export type NotePrio = 'low' | 'high' | 'last' | 'first';
@@ -280,12 +242,13 @@ export class MonoInstrData extends VoiceData {
   }
 }
 
-export class InstrProxy implements AnyInstr {
+export class InstrProxy extends ItemSet<AnyInstr> implements AnyInstr {
   set: Set<AnyInstr> = new Set();
 
   name: string;
 
   constructor (name: string) {
+    super();
     this.name = name;
   }
 
@@ -294,49 +257,13 @@ export class InstrProxy implements AnyInstr {
     this.set.forEach((instr) => instr.cmd(time, ic));
   }
 
-  addInstr(instr: AnyInstr): () => void {
-    this.set.add(instr);
-    console.log('ADD', this.name, instr);
-    return () => {
-      this.set.delete(instr);
-      console.log('DEL', this.name, instr);
-    };
+  withParam(name: string, cb: (p: AudioParam) => void): void {
+    this.set.forEach((instr) => instr.withParam(name, cb));
   }
 }
 
-export class BandData extends EventEmitter {
-  band: Map<string, InstrProxy> = new Map();
-
-  emitChange() {
-    this.emit('change');
-  }
-
-  onChange(cb: () => void): () => void {
-    this.on('change', cb);
-    return () => {
-      this.off('change', cb);
-    };
-  }
-
-  getInstr(name: string): InstrProxy {
-    const instr = this.band.get(name);
-    if (instr) return instr;
-    const ni = new InstrProxy(name);
-    this.band.set(name, ni);
-    return ni;
-  }
-
-  addInstr(name: string, instr: AnyInstr): () => void {
-    const ip = this.getInstr(name);
-    const fin = ip.addInstr(instr);
-    this.emitChange();
-    return () => {
-      fin();
-      this.emitChange();
-    };
-  }
-
-  getInstrNames() {
-    return [...this.band.keys()].filter((key) => this.band.get(key)!.set.size > 0);
+export class BandData extends NamedMap<AnyInstr, InstrProxy> {
+  constructor() {
+    super((name) => new InstrProxy(name));
   }
 }

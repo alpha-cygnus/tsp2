@@ -1,7 +1,5 @@
 import {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 
-import {Timed} from '../common/types';
-
 import {RootContextData, RootCtx} from './ctx';
 
 

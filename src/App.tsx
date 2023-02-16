@@ -1,11 +1,9 @@
-// import React, { useCallback, useState } from 'react';
-import { useCallback } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Scope, Destination, Gain} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { TSPRoot } from './root/comps';
-import { Keys } from './ui/comps';
+import { Keys, Scope } from './ui/comps';
 
 
 export function TestSyn({freq = 440}: {freq?: number}) {

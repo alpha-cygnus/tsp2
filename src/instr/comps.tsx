@@ -1,7 +1,7 @@
 import { Children, useEffect, useMemo, useState } from 'react';
 import { Const, Gain } from '../audio/comps';
-import { ParamNameContext } from '../audio/ctx';
-import { WithIn, WithInChildren, WithOut } from '../audio/types';
+import { WithInChildren, WithOut } from '../audio/types';
+import { ParamContext } from '../param/ctx';
 import {PolyInstrContext, useBand, usePolyInstr, VoiceContext} from './ctx';
 import { useAdsrCb } from './hooks';
 import { MonoInstrData, NotePrio, PolyInstrData, VoiceData } from './types';
@@ -19,9 +19,9 @@ export function Voice({children}: VoiceProps) {
   
   return (
     <VoiceContext.Provider value={v}>
-      <ParamNameContext.Provider value={v}>
+      <ParamContext.Provider value={v.pcd}>
         {children}
-      </ParamNameContext.Provider>
+      </ParamContext.Provider>
     </VoiceContext.Provider>
   );
 }
@@ -77,7 +77,7 @@ export function PolyInstr({name, voices, children}: PolyInstrProps) {
   }, [voices, children]);
 
   const band = useBand();
-  useEffect(() => band.addInstr(name, pi), [band, name, pi]);
+  useEffect(() => band.add(name, pi), [band, name, pi]);
   
   return (
     <PolyInstrContext.Provider value={pi}>
@@ -96,7 +96,7 @@ export function MonoInstr({name, notePrio, children}: MonoInstrProps) {
   const [mi] = useState(() => new MonoInstrData());
 
   const band = useBand();
-  useEffect(() => band.addInstr(name, mi), [band, name, mi]);
+  useEffect(() => band.add(name, mi), [band, name, mi]);
 
   useEffect(() => {
     mi.notePrio = notePrio;
@@ -104,9 +104,9 @@ export function MonoInstr({name, notePrio, children}: MonoInstrProps) {
   
   return (
     <VoiceContext.Provider value={mi}>
-      <ParamNameContext.Provider value={mi}>
+      <ParamContext.Provider value={mi.pcd}>
         {children}
-      </ParamNameContext.Provider>
+      </ParamContext.Provider>
     </VoiceContext.Provider>
   );
 }

@@ -1,3 +1,4 @@
+import { O_RDWR } from 'constants';
 import {EventEmitter} from 'events';
 import { ItemSet, NamedMap, WithParam } from '../common/types';
 import { unreachable } from '../common/utils';
@@ -14,7 +15,7 @@ type VoiceEventData = {
 export type InstrCmd = 
 | {on: {note: number, vel: number}}
 | {off: {note: number, vel: number}}
-| {omniOff: {vel?: number}};
+| {cut: {vel?: number}};
 
 export interface AnyInstr extends WithParam {
   cmd(time: number, ic: InstrCmd): void;
@@ -65,6 +66,13 @@ export class VoiceData extends EventEmitter implements AnyInstr {
       this.off('stop', cb);
     }
   }
+
+  onCut(cb: (e: VoiceEventData) => void): () => void {
+    this.on('cut', cb);
+    return () => {
+      this.off('cut', cb);
+    }
+  }
   
   getFreq(note: number) {
     return Math.pow(2, (note - 69) / 12) * 440; 
@@ -105,7 +113,13 @@ export class VoiceData extends EventEmitter implements AnyInstr {
       this.stop(time);
       return;
     }
-    if ('omniOff' in ic) {
+    if ('cut' in ic) {
+      this.withParam('freq', (pp) => {
+        pp.cancelScheduledValues(time);
+      });
+      this.withParam('detune', (pp) => {
+        pp.cancelScheduledValues(time);
+      });
       this.stop(time);
       return;
     }
@@ -176,11 +190,15 @@ export class PolyInstrData implements AnyInstr {
       console.log('noff', cg, v);
   
       if (!v) return [];
+
+      this.playing.delete(cg);
   
       return [v];
     }
-    if ('omniOff' in ic) {
-      return [...this.playing.values()];
+    if ('cut' in ic) {
+      const res = [...this.voices];
+      this.playing.clear();
+      return res;
     }
 
     unreachable(ic);
@@ -190,6 +208,8 @@ export class PolyInstrData implements AnyInstr {
     const vs = this.cmdVoices(time, ic);
 
     for (const v of vs) v.cmd(time, ic);
+
+    console.log('POLY', time, ic, this.playing.size);
   }
 
   paramVoices(name: string): VoiceData[] {

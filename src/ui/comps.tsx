@@ -31,7 +31,7 @@ export function Keys({instrName}: KeysProps) {
   }, [band, instrName]);
 
   useEffect(() => () => {
-    instr.cmd(getTime(), {omniOff: {}});
+    instr.cmd(getTime(), {cut: {}});
   }, [instr]);
 
   const [baseNote, setBaseNote] = useState(48);
@@ -58,7 +58,7 @@ export function Keys({instrName}: KeysProps) {
         setBaseNote(baseNote + 12);
       }
       if (e.key === 'Escape') {
-        instr.cmd(getTime(), {omniOff: {}});
+        instr.cmd(getTime(), {cut: {}});
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {

@@ -26,6 +26,12 @@ export function useAdsrCb(
           .setTargetAtTime(0, time, r / 4)
         );
       }),
+      v.onCut(({time}) => {
+        pp.forEach(p => p
+          .cancelAndHoldAtTime(time)
+          .linearRampToValueAtTime(0, time + 0.01)
+        );
+      }),
     ];
     
     return () => {

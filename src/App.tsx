@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import './App.css';
 import {Filter, Osc, Cut, Destination, Gain} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
+import { play, playNote, skip } from './pttrn/api';
+import { Play, Pttrn } from './pttrn/comps';
 import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
 
@@ -25,6 +28,17 @@ export function TestSyn({freq = 440}: {freq?: number}) {
 }
 
 function App() {
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    document.addEventListener('keydown', (e) => {
+      // console.log(e.key);
+      if (e.key == ' ') {
+        setPlaying(v => !v);
+      }
+    });
+  }, []);
+
   return (
     <>
       <TSPRoot>
@@ -41,6 +55,26 @@ function App() {
           </Scope>
         </Destination>
         <Keys instrName="test" />
+        <Pttrn name="test">
+          {() => {
+            for (let i = 0; i < 16; i++) {
+              playNote('test', 60 + i, 1/5);
+              skip(0.25);
+            }
+          }}
+        </Pttrn>
+        <Pttrn name="test">
+          {() => {
+            for (let i = 0; i < 16; i++) {
+              playNote('test', 60 - i, 1/15);
+              skip(0.25);
+            }
+          }}
+        </Pttrn>
+        {playing && <>
+          Playing...
+          <Play name="test" />
+        </>}
       </TSPRoot>
     </>
   );

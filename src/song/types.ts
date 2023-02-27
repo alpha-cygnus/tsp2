@@ -1,5 +1,5 @@
-import { BandData } from "../instr/types";
-import { StageData } from "../track/types";
+import { BandData } from '../instr/types';
+import { StageData } from '../track/types';
 
 export class LoopsData {
   song: SongData;
@@ -12,5 +12,5 @@ export class LoopsData {
 export class SongData {
   band = new BandData();
   stage = new StageData();
-  loops = new LoopsData(this);
 }
+

@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 
 export type Time = number;
 
-export type Timed<V> = [V, Time];
+export type Timed<V> = [Time, V];
 
 export type Ratio = [number, number];
 
@@ -76,6 +76,3 @@ export interface WithParam {
   withParam(name: string, cb: (p: AudioParam) => void): void;
 }
 
-export interface AnyInstr extends WithParam {
-  cmd(time: number, ic: InstrCmd): void;
-}

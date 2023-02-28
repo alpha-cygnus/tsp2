@@ -3,10 +3,10 @@ import React, {useEffect, useMemo, ReactElement, useRef, useState} from 'react';
 import {useACtx} from '../root/ctx';
 import {useAddParam} from '../param/ctx';
 
-import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB} from './types';
+import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
-import {useAnalyser, useConst, useFilter, useGain, useOsc, usePan} from './hooks';
+import {useAnalyser, useConst, useFilter, useGain, useNoise, useOsc, usePan} from './hooks';
 
 
 type ConnProps = {
@@ -285,5 +285,18 @@ export function Pan({name, pan, ...rest}: PanProps) {
   return <>
     <NodeInOut node={node} {...rest} />
     <ParamIn name="pan" param={node.pan}>{pan}</ParamIn>
+  </>;
+}
+
+type NoiseProps = WithOut & {
+  name?: string;
+  type: NoiseType,
+};
+
+export function Noise({name, type, ...rest}: NoiseProps) {
+  const node = useNoise(type);
+
+  return <>
+    <NodeOut node={node} {...rest} />
   </>;
 }

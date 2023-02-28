@@ -88,8 +88,8 @@ export function Scope({...rest}: ScopeProps) {
 
   const [paused, setPaused] = useState(false);
 
-  const width = 600;
-  const height = 300;
+  const width = 1200;
+  const height = 800;
 
   useEffect(() => {
     if (paused) return;
@@ -106,7 +106,7 @@ export function Scope({...rest}: ScopeProps) {
       canvasCtx.fillStyle = 'rgb(0, 0, 0)';
       canvasCtx.fillRect(0, 0, width, height);
 
-      canvasCtx.lineWidth = 2;
+      canvasCtx.lineWidth = 3;
       canvasCtx.strokeStyle = 'rgb(0, 255, 0)';
       canvasCtx.beginPath();
 
@@ -147,7 +147,16 @@ export function Scope({...rest}: ScopeProps) {
   return <>
     <NodeInOut node={node} {...rest} />
     <div className="scope">
-      <canvas ref={canvasRef} width={width} height={height} onClick={() => setPaused(x => !x)} />
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        style={{
+          width: width / 2,
+          height: height / 2,
+        }}
+        onClick={() => setPaused(x => !x)}
+      />
     </div>
   </>;
 }

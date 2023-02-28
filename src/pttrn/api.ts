@@ -1,6 +1,6 @@
 import {getCurrentPttrnContext} from './core';
 
-import {PttrnId} from './types';
+import {ParamSetDest, ParamSetName, ParamSetVal, PttrnId} from './types';
 
 
 export function playIns(ins: string, note: number, vel: number = 100) {
@@ -27,11 +27,34 @@ export function pttrnRepeat(id: PttrnId, count: number) {
   ctx.put({ pttrn: { id, repeat: count } });
 }
 
+export function setParam(name: ParamSetName, val: ParamSetVal) {
+  const ctx = getCurrentPttrnContext();
+  ctx.put({ param: { name, val } });
+}
+
+function makeParamApi(dest: ParamSetDest, destName: string): Record<string, ParamSetVal> {
+  return new Proxy<Record<string, ParamSetVal>>({}, {
+    set(_, p, newValue) {
+      if (typeof p === 'symbol') return false;
+      if (typeof newValue !== 'number' && newValue !== null && typeof newValue !== 'function') {
+        return false;
+      }
+
+      setParam(`${dest}.${destName}.${p}`, newValue);
+      
+      return true;
+    },
+  });
+}
+
 class InsApi {
   name: string;
   
+  param: Record<string, ParamSetVal>;
+  
   constructor(name: string) {
     this.name = name;
+    this.param = makeParamApi('ins', name);
   }
   
   on(note: number, vel: number = 100): this {
@@ -69,8 +92,26 @@ function makeSkip(): Skip {
 export const skip = makeSkip();
 
 export const I = new Proxy<Record<string, InsApi>>({}, {
-  get(target, p, receiver) {
+  get(_, p) {
     if (typeof p === 'symbol') p = p.toString();
     return new InsApi(p);
+  },
+});
+
+class TrkApi {
+  name: string;
+  
+  param: Record<string, ParamSetVal>;
+  
+  constructor(name: string) {
+    this.name = name;
+    this.param = makeParamApi('trk', name);
+  }
+}
+
+export const T = new Proxy<Record<string, TrkApi>>({}, {
+  get(_, p) {
+    if (typeof p === 'symbol') p = p.toString();
+    return new TrkApi(p);
   },
 });

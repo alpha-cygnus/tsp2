@@ -25,3 +25,5 @@ export type AParamCB = (p: AudioParam) => () => void;
 export type AParamValue = WithInChild | number | AParamCB | string | undefined;
 
 export type AParamProp = AParamValue | AParamValue[];
+
+export type NoiseType = 'white' | 'pink';

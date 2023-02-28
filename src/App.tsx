@@ -3,7 +3,7 @@ import './App.css';
 import {Filter, Osc, Cut, Destination, Gain} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
-import { play, playNote, skip } from './pttrn/api';
+import { I, skip } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
 import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
@@ -58,16 +58,16 @@ function App() {
         <Pttrn name="test">
           {() => {
             for (let i = 0; i < 16; i++) {
-              playNote('test', 60 + i, 1/5);
+              I.test.note(60 + i, 1/5);
               skip(0.25);
             }
           }}
         </Pttrn>
-        <Pttrn name="test">
+        <Pttrn name="test2">
           {() => {
             for (let i = 0; i < 16; i++) {
-              playNote('test', 60 - i, 1/15);
-              skip(0.25);
+              I.test.note(60 - i, 1/32);
+              skip.note(1/16);
             }
           }}
         </Pttrn>

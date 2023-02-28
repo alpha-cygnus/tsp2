@@ -11,10 +11,20 @@ export type Bpm = { bpm: number };
 export type Pttrn = { pttrn: { id: PttrnId, repeat?: number, stop?: number }};
 export type PttrnStart = { pttrnStart: { id: PttrnId }};
 export type PttrnEnd = { pttrnEnd: { id: PttrnId }};
+export type ParamSetDest = 'ins' | 'trk';
+export type ParamSetConst = number | null;
+export type ParamSetFunc = ((t: number) => number);
+export type ParamSetVal = ParamSetConst | ParamSetFunc;
+export type ParamSetName = `${ParamSetDest}.${string}.${string}`;
+export type ParamSetRaw = { param: { name: ParamSetName, val: ParamSetVal } };
+export type ParamSetPrecooked =
+| { param: { name: ParamSetName, val: ParamSetConst, lin?: boolean } }
+| { paramFunc: { name: ParamSetName, func: ParamSetFunc, stop: number } };
+export type ParamSetCooked = { param: { name: ParamSetName, val: ParamSetConst, lin?: boolean } };
 
-export type RawItem = ICmd | Bpm | Pttrn | PttrnStart | PttrnEnd;
-export type PrecookedItem = ICmd | Bpm | Pttrn;
-export type CookedItem = ICmd;
+export type RawItem = ICmd | Bpm | Pttrn | PttrnStart | PttrnEnd | ParamSetRaw;
+export type PrecookedItem = ICmd | Bpm | Pttrn | ParamSetPrecooked;
+export type CookedItem = ICmd | ParamSetCooked;
 
 export class PttrnRunContext {
   t: number = 0;
@@ -60,3 +70,4 @@ export class PttrnsData extends NamedMap<PttrnData, PttrnProxy> {
     super(() => new PttrnProxy());
   }
 }
+

@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import { Track } from '../track/comps';
 
 import {RootContextData, RootCtx} from './ctx';
 
@@ -66,7 +67,9 @@ export function TSPRoot({actx: a, lag: l, children}: TSPRootProps) {
 
   return (
     <RootCtx.Provider value={data}>
-      {children}
+      <Track name="main">
+        {children}
+      </Track>
     </RootCtx.Provider>
   );
 }

@@ -57,17 +57,17 @@ class InsApi {
     this.param = makeParamApi('ins', name);
   }
   
-  on(note: number, vel: number = 100): this {
+  on(note: number, vel: number = 1): this {
     playIns(this.name, note, vel);
     return this;
   }
   
-  off(note: number, vel: number = 100): this {
+  off(note: number, vel: number = 1): this {
     stopIns(this.name, note, vel);
     return this;
   }
 
-  note(note: number, dur: number, vel: number = 100): this {
+  note(note: number, dur: number, vel: number = 1): this {
     playNote(this.name, note, dur, vel);
     return this;
   }

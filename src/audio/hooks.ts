@@ -81,7 +81,7 @@ const noiseCache: Record<NoiseType, {actx: BaseAudioContext, buf: AudioBuffer} |
 
 function createNoiseData(type: NoiseType, out: Float32Array) {
   if (type === 'white') {
-    for (let i = 0; i < out.length; i++) out[i] = Math.random() * 2 + 1;
+    for (let i = 0; i < out.length; i++) out[i] = Math.random() * 2 - 1;
     return;
   }
 

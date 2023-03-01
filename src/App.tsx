@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
-import { I, skip } from './pttrn/api';
+import { I, skip, T } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
 import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
@@ -27,6 +27,16 @@ export function TestSyn({freq = 440}: {freq?: number}) {
   );
 }
 
+export function NoiseTest() {
+  return (
+    <Filter type="highpass" frequency={10000} Q={10}>
+      <ADSR name="e" a={0.001} d={0.1} s={0} r={0.1} max={0.3}>
+        <Noise type="white" />
+      </ADSR>
+    </Filter>
+  )
+}
+
 function App() {
   const [playing, setPlaying] = useState(false);
 
@@ -45,18 +55,21 @@ function App() {
         <Destination>
           <Scope>
             <Gain gain={0.2}>
-              <PolyInstr name="test" voices={8}>
-                <TestSyn />
-              </PolyInstr>
+              <Pan pan="pan">
+                <PolyInstr name="test" voices={8}>
+                  <TestSyn />
+                </PolyInstr>
+              </Pan>
             </Gain>
-            {/* <MonoInstr name="test" notePrio="last">
-              <TestSyn />
-            </MonoInstr> */}
+            <MonoInstr name="nTest" notePrio="last">
+              <NoiseTest />
+            </MonoInstr>
           </Scope>
         </Destination>
-        <Keys instrName="test" />
+        <Keys instrName="nTest" />
         <Pttrn name="test">
           {() => {
+            T.main.param.pan = (t) => Math.sin(t*10);
             for (let i = 0; i < 16; i++) {
               I.test.note(60 + i, 1/5);
               skip(0.25);
@@ -66,14 +79,14 @@ function App() {
         <Pttrn name="test2">
           {() => {
             for (let i = 0; i < 16; i++) {
-              I.test.note(60 - i, 1/32);
+              I.nTest.note(60 - i, 1/32, i % 4 ? 0.3 : 1);
               skip.note(1/16);
             }
           }}
         </Pttrn>
         {playing && <>
           Playing...
-          <Play name="test" />
+          <Play name="test2" />
         </>}
       </TSPRoot>
     </>

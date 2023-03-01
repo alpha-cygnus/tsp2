@@ -10,6 +10,7 @@ type VoiceEventData = {
   voice: VoiceData;
   event: VoiceEvent;
   time: number;
+  vel?: number;
 }
 
 export type InstrCmd = 
@@ -31,21 +32,23 @@ export class VoiceData extends EventEmitter implements AnyInstr {
     this.emit(d.event, d);
   }
 
-  start(time: number): void {
+  start(time: number, vel: number): void {
     this.startedAt = time;
     this.emitEvent({
       event: 'start',
       voice: this,
       time,
+      vel,
     });
   }
   
-  stop(time: number): void {
+  stop(time: number, vel?: number): void {
     this.stoppedAt = time;
     this.emitEvent({
       event: 'stop',
       voice: this,
       time,
+      vel,
     });
   }
 
@@ -102,7 +105,7 @@ export class VoiceData extends EventEmitter implements AnyInstr {
       this.withParam('vel', (pp) => {
         pp.setValueAtTime(vel, time);
       });
-      this.start(time);
+      this.start(time, vel);
       return;
     }
     if ('off' in ic) {
@@ -110,7 +113,7 @@ export class VoiceData extends EventEmitter implements AnyInstr {
       this.withParam('relvel', (pp) => {
         pp.setValueAtTime(vel, time);
       });
-      this.stop(time);
+      this.stop(time, vel);
       return;
     }
     if ('cut' in ic) {
@@ -232,6 +235,7 @@ export class MonoInstrData extends VoiceData {
   cmd(time: number, ic: InstrCmd): void {
     if ('on' in ic) {
       const {note} = ic.on;
+      console.log('MONO', 'on', ic, this.isStarted());
       if (!this.isStarted()) {
         this.prevNote = note;
         return super.cmd(time, ic);

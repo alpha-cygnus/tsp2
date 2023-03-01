@@ -216,18 +216,21 @@ type FilterProps = WithOut & WithIn & {
   type: BiquadFilterType;
   frequency?: AParamProp;
   detune?: AParamProp;
+  Q?: AParamProp;
 };
 
-export function Filter({name, type, frequency, detune, ...rest}: FilterProps) {
+export function Filter({name, type, frequency, detune, Q, ...rest}: FilterProps) {
   const node = useFilter(type);
 
   setNodeId(node.frequency, `${getNodeId(node, name)}.frequency`);
   setNodeId(node.detune, `${getNodeId(node, name)}.detune`);
+  setNodeId(node.Q, `${getNodeId(node, name)}.Q`);
 
   return <>
     <NodeInOut node={node} {...rest} />
     <ParamIn name="freq" param={node.frequency}>{frequency}</ParamIn>
     <ParamIn name="detune" param={node.detune}>{detune}</ParamIn>
+    <ParamIn name="Q" param={node.Q}>{Q}</ParamIn>
   </>;
 }
 

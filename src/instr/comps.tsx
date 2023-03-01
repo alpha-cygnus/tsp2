@@ -34,6 +34,7 @@ type ADSRProps = WithOut & {
   r: number;
   max?: number;
   delay?: number;
+  velSense?: number;
   children?: WithInChildren,
 }
 
@@ -42,10 +43,11 @@ export function ADSR({
   a, d, s, r,
   max = 1,
   delay = 0,
+  velSense = 1,
   children,
   ...without
 }: ADSRProps) {
-  const adsrCb = useAdsrCb(a, d, s, r, max, delay);
+  const adsrCb = useAdsrCb(a, d, s, r, max, delay, velSense);
 
   if (children) {
     return <Gain name={name} gain={[0, adsrCb]} {...without}>

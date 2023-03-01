@@ -7,17 +7,20 @@ import { useVoice } from './ctx';
 export function useAdsrCb(
   a: number, d: number, s: number, r: number,
   max: number = 1, del: number = 0,
+  velSense: number = 1,
 ): AParamCB {
   const v = useVoice();
   const [pp] = useState(() => new ParamProxy());
   
   useEffect(() => {
     const unsubs = [
-      v.onStart(({time}) => {
+      v.onStart(({time, vel}) => {
+        const vf = ((vel ?? 1 - 1) * velSense) + 1;
+        console.log('start', vel, vf);
         pp.forEach(p => p
           .cancelAndHoldAtTime(time)
-          .setTargetAtTime(max, time + del, a / 4)
-          .setTargetAtTime(s, time + del + a, d / 4)
+          .setTargetAtTime(max * vf, time + del, a / 4)
+          .setTargetAtTime(s * vf, time + del + a, d / 4)
         );
       }),
       v.onStop(({time}) => {

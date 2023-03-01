@@ -49,7 +49,7 @@ export function Keys({instrName}: KeysProps) {
       onNoteKey(e, (note, time) => {
         if (pressed.has(note)) return;
         pressed.add(note);
-        instr.cmd(time, {on: {note, vel: 100}});
+        instr.cmd(time, {on: {note, vel: 1}});
       });
       if (e.key === '[') {
         setBaseNote(baseNote - 12);
@@ -63,7 +63,7 @@ export function Keys({instrName}: KeysProps) {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       onNoteKey(e, (note, time) => {
-        instr.cmd(time, {off: {note, vel: 100}});
+        instr.cmd(time, {off: {note, vel: 1}});
         pressed.delete(note);
       });
     };

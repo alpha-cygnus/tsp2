@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, Echo, PingPong} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
@@ -65,13 +65,15 @@ function App() {
               </Pan>
             </Gain>
             <MonoInstr name="nTest" notePrio="last">
-              <PingPong time={0.4}>
+              {/* <PingPong time={0.4}> */}
+              <SimpleReverb seconds={5} decay={5}>
                 <NoiseTest />
-              </PingPong>
+              </SimpleReverb>
+              {/* </PingPong> */}
             </MonoInstr>
           </Scope>
         </Destination>
-        <Keys instrName="test" />
+        <Keys instrName="nTest" />
         <Pttrn name="test">
           {() => {
             T.main.param.pan = (t) => Math.sin(t*10);

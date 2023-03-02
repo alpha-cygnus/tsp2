@@ -6,7 +6,7 @@ import {useAddParam} from '../param/ctx';
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
-import {useConst, useDelay, useFilter, useGain, useNodeRef, useNoise, useOsc, usePan} from './hooks';
+import {useConst, useDelay, useFilter, useGain, useNodeRef, useNoise, useOsc, usePan, useSimpleReverb} from './hooks';
 
 
 type ConnProps = {
@@ -306,12 +306,12 @@ export function Noise({name, type, ...rest}: NoiseProps) {
   </>;
 }
 
-type RawDelayProps = WithIn & WithOut & {
+type DelayWetProps = WithIn & WithOut & {
   name?: string;
   time: AParamProp;
 }
 
-export function RawDelay({name, time, ...rest}: RawDelayProps) {
+export function DelayWet({name, time, ...rest}: DelayWetProps) {
   const node = useDelay();
 
   setNodeId(node.delayTime, `${getNodeId(node, name)}.time`);
@@ -333,9 +333,9 @@ export function Echo({children, time, feedback}: EchoProps) {
   return <>
     <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
     <Gain nodeRef={delRef} gain={feedback || 0.5}>
-      <RawDelay time={time}>
+      <DelayWet time={time}>
         {[srcRef, delRef]}
-      </RawDelay>
+      </DelayWet>
     </Gain>
   </>;
 }
@@ -353,17 +353,45 @@ export function PingPong({children, time, feedback}: PingPongProps) {
     <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
     <Pan pan={-0.5}>
       <Gain nodeRef={leftRef} gain={feedback || 0.5}>
-        <RawDelay time={time}>
+        <DelayWet time={time}>
           {[srcRef, rightRef]}
-        </RawDelay>
+        </DelayWet>
       </Gain>
     </Pan>
     <Pan pan={0.5}>
       <Gain nodeRef={rightRef} gain={feedback || 0.5}>
-        <RawDelay time={time}>
+        <DelayWet time={time}>
           {[leftRef,]}
-        </RawDelay>
+        </DelayWet>
       </Gain>
     </Pan>
   </>;
+}
+
+type SimpleReverbProps = WithIn & WithOut & {
+  name?: string;
+  seconds: number;
+  decay: number;
+  reverse?: boolean;
+}
+
+export function SimpleReverbWet({name, seconds, decay, reverse, ...rest}: SimpleReverbProps) {
+  const node = useSimpleReverb(seconds, decay, reverse);
+
+  getNodeId(node, name);
+
+  return <>
+    <NodeInOut node={node} {...rest} />
+  </>;
+}
+
+export function SimpleReverb({children, ...rest}: SimpleReverbProps) {
+  const srcRef = useNodeRef();
+
+  return <>
+    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
+    <SimpleReverbWet {...rest}>
+      {[srcRef,]}
+    </SimpleReverbWet>
+  </>
 }

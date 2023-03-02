@@ -156,3 +156,32 @@ export function useDelay() {
 
   return node;
 }
+
+// Adopted from https://github.com/web-audio-components/simple-reverb/blob/master/index.js
+function buildSimpleImpulseResponse(actx: BaseAudioContext, seconds: number, decay: number, reverse?: boolean) {
+  const rate = actx.sampleRate;
+  const length = rate * seconds;
+  const impulse = actx.createBuffer(2, length, rate);
+  const impulseL = impulse.getChannelData(0);
+  const impulseR = impulse.getChannelData(1);
+
+  for (let i = 0; i < length; i++) {
+    const n = reverse ? length - i : i;
+    impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay);
+    impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay);
+  }
+
+  return impulse;
+}
+
+export function useSimpleReverb(seconds: number, decay: number, reverse: boolean = false) {
+  const actx = useACtx();
+
+  const [node] = useState(() => actx.createConvolver());
+
+  useEffect(() => {
+    node.buffer = buildSimpleImpulseResponse(actx, seconds, decay, reverse);
+  }, [node, seconds, decay, reverse, actx]);
+
+  return node;
+}

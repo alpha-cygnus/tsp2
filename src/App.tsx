@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, Echo} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, Echo, PingPong} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
@@ -57,19 +57,21 @@ function App() {
           <Scope>
             <Gain gain={0.2}>
               <Pan pan="pan">
-                <PolyInstr name="test" voices={8}>
-                  <TestSyn />
-                </PolyInstr>
+                <PingPong time={0.4}>
+                  <PolyInstr name="test" voices={8}>
+                    <TestSyn />
+                  </PolyInstr>
+                </PingPong>
               </Pan>
             </Gain>
             <MonoInstr name="nTest" notePrio="last">
-              <Echo time={0.4}>
+              <PingPong time={0.4}>
                 <NoiseTest />
-              </Echo>
+              </PingPong>
             </MonoInstr>
           </Scope>
         </Destination>
-        <Keys instrName="nTest" />
+        <Keys instrName="test" />
         <Pttrn name="test">
           {() => {
             T.main.param.pan = (t) => Math.sin(t*10);
@@ -89,7 +91,7 @@ function App() {
         </Pttrn>
         {playing && <>
           Playing...
-          <Play name="test2" />
+          <Play name="test" />
         </>}
       </TSPRoot>
     </>

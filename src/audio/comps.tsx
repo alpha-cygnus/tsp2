@@ -339,3 +339,31 @@ export function Echo({children, time, feedback}: EchoProps) {
     </Gain>
   </>;
 }
+
+type PingPongProps = WithIn & WithOut & {
+  time: AParamProp;
+  feedback?: AParamProp;
+}
+
+export function PingPong({children, time, feedback}: PingPongProps) {
+  const srcRef = useNodeRef();
+  const leftRef = useNodeRef();
+  const rightRef = useNodeRef();
+  return <>
+    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
+    <Pan pan={-0.5}>
+      <Gain nodeRef={leftRef} gain={feedback || 0.5}>
+        <RawDelay time={time}>
+          {[srcRef, rightRef]}
+        </RawDelay>
+      </Gain>
+    </Pan>
+    <Pan pan={0.5}>
+      <Gain nodeRef={rightRef} gain={feedback || 0.5}>
+        <RawDelay time={time}>
+          {[leftRef,]}
+        </RawDelay>
+      </Gain>
+    </Pan>
+  </>;
+}

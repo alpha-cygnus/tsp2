@@ -17,19 +17,19 @@ export function useNodeRef(): NodeRef {
 export function useConst() {
   const actx = useACtx();
   const [node] = useState(() => actx.createConstantSource());
-  
+
   useEffect(() => {
     node.start();
     return () => node.stop();
   }, [node]);
-  
+
   return node;
 }
 
 export function useOsc(type: OscillatorType) {
   const actx = useACtx();
   const [node] = useState(() => actx.createOscillator());
-  
+
   useEffect(() => {
     node.type = type;
   }, [node, type]);
@@ -38,14 +38,14 @@ export function useOsc(type: OscillatorType) {
     node.start();
     return () => node.stop();
   }, [node]);
-  
+
   return node;
 }
 
 export function useFilter(type: BiquadFilterType) {
   const actx = useACtx();
   const [node] = useState(() => actx.createBiquadFilter());
-  
+
   useEffect(() => {
     node.type = type;
   }, [node, type]);
@@ -87,11 +87,11 @@ function createNoiseData(type: NoiseType, out: Float32Array) {
 
   if (type === 'pink') {
     let b0, b1, b2, b3, b4, b5, b6;
-    
+
     b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
-    
-    for (var i = 0; i < out.length; i++) {
-      var white = Math.random() * 2 - 1;
+
+    for (let i = 0; i < out.length; i++) {
+      const white = Math.random() * 2 - 1;
       b0 = 0.99886 * b0 + white * 0.0555179;
       b1 = 0.99332 * b1 + white * 0.0750759;
       b2 = 0.96900 * b2 + white * 0.1538520;
@@ -110,7 +110,7 @@ function createNoiseData(type: NoiseType, out: Float32Array) {
 
 function getNoiseBuffer(type: NoiseType, actx: BaseAudioContext): AudioBuffer {
   let ch = noiseCache[type];
-  
+
   if (!ch || ch.actx !== actx) {
     const bufSize = 2 * actx.sampleRate;
 
@@ -136,12 +136,23 @@ export function useNoise(type: NoiseType) {
 
   useEffect(() => {
     node.buffer = getNoiseBuffer(type, actx);
+    node.loop = true;
   }, [node, type, actx]);
 
   useEffect(() => {
     node.start();
-    return () => node.stop();
+    return () => {
+      node.stop();
+    }
   }, [node]);
-  
+
+  return node;
+}
+
+export function useDelay() {
+  const actx = useACtx();
+
+  const [node] = useState(() => actx.createDelay());
+
   return node;
 }

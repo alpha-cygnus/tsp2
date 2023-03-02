@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, Echo} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
@@ -29,11 +29,12 @@ export function TestSyn({freq = 440}: {freq?: number}) {
 
 export function NoiseTest() {
   return (
-    <Filter type="highpass" frequency={10000} Q={10}>
-      <ADSR name="e" a={0.001} d={0.1} s={0} r={0.1} max={0.3}>
+    <ADSR name="e" a={0.001} d={0.1} s={0} r={0.1} max={0.3}>
+      <Filter type="highpass" frequency={10000} Q={10}>
         <Noise type="white" />
-      </ADSR>
-    </Filter>
+      </Filter>
+      <Osc name="sgn" type="sine" />
+    </ADSR>
   )
 }
 
@@ -62,7 +63,9 @@ function App() {
               </Pan>
             </Gain>
             <MonoInstr name="nTest" notePrio="last">
-              <NoiseTest />
+              <Echo time={0.4}>
+                <NoiseTest />
+              </Echo>
             </MonoInstr>
           </Scope>
         </Destination>

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, ReactElement, useRef, useState} from 'react';
+import React, {useEffect, useMemo, ReactElement} from 'react';
 
 import {useACtx} from '../root/ctx';
 import {useAddParam} from '../param/ctx';
@@ -6,7 +6,7 @@ import {useAddParam} from '../param/ctx';
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
-import {useAnalyser, useConst, useFilter, useGain, useNoise, useOsc, usePan} from './hooks';
+import {useConst, useDelay, useFilter, useGain, useNodeRef, useNoise, useOsc, usePan} from './hooks';
 
 
 type ConnProps = {
@@ -299,7 +299,43 @@ type NoiseProps = WithOut & {
 export function Noise({name, type, ...rest}: NoiseProps) {
   const node = useNoise(type);
 
+  getNodeId(node, name);
+
   return <>
     <NodeOut node={node} {...rest} />
+  </>;
+}
+
+type RawDelayProps = WithIn & WithOut & {
+  name?: string;
+  time: AParamProp;
+}
+
+export function RawDelay({name, time, ...rest}: RawDelayProps) {
+  const node = useDelay();
+
+  setNodeId(node.delayTime, `${getNodeId(node, name)}.time`);
+
+  return <>
+    <NodeInOut node={node} {...rest} />
+    <ParamIn name="time" param={node.delayTime}>{time}</ParamIn>
+  </>;
+}
+
+type EchoProps = WithIn & WithOut & {
+  time: AParamProp;
+  feedback?: AParamProp;
+}
+
+export function Echo({children, time, feedback}: EchoProps) {
+  const srcRef = useNodeRef();
+  const delRef = useNodeRef();
+  return <>
+    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
+    <Gain nodeRef={delRef} gain={feedback || 0.5}>
+      <RawDelay time={time}>
+        {[srcRef, delRef]}
+      </RawDelay>
+    </Gain>
   </>;
 }

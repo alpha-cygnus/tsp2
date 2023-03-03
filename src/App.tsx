@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb} from './audio/comps';
-import {useNodeRef} from './audio/hooks';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb, Bus} from './audio/comps';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
@@ -10,21 +9,19 @@ import { Keys, Scope } from './ui/comps';
 
 
 export function TestSyn({freq = 440}: {freq?: number}) {
-  const lfo = useNodeRef();
-
-  return (
+  return <Bus>
     <ADSR name="env" a={0.01} d={0.1} s={0.9} r={0.5} max={0.3}>
       <Filter type="lowpass" detune={<ADSR a={0.1} d={0.6} s={0} r={0.5} max={10000} />}>
-        <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={[lfo, "detune"]} />
-        <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={[lfo, "detune"]} />
+        <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={['lfo', 'detune']} />
+        <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={['lfo', 'detune']} />
       </Filter>
       <Cut>
-        <ADSR name="lfo" a={0.5} d={1} s={1} r={0.5} max={30} delay={0.7} nodeRef={lfo}>
+        <ADSR name="lfo" a={0.5} d={1} s={1} r={0.5} max={30} delay={0.7} send="lfo">
           <Osc type="sine" frequency={4} />
         </ADSR>
       </Cut>
     </ADSR>
-  );
+  </Bus>;
 }
 
 export function NoiseTest() {

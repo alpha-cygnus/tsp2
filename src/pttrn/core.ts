@@ -1,4 +1,3 @@
-import { rawListeners } from 'process';
 import { Timed } from '../common/types';
 import { CookedItem, CookedPttrn, PrecookedItem, PrecookedPttrn, PttrnRunContext, PttrnFunc, PttrnId, PttrnsData, ParamSetName, ParamSetFunc, ParamSetDest } from './types';
 
@@ -125,7 +124,7 @@ export function cookPttrn(pttrns: PttrnsData, name: string, startBpm: number): C
   let ct = 0;
   let pt = 0;
   let bpm = startBpm;
-  let seq: Timed<CookedItem>[] = [];
+  const seq: Timed<CookedItem>[] = [];
 
   const sorted = rawSeq.sort(([a], [b]) => a - b);
 

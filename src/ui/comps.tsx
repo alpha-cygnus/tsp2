@@ -3,7 +3,7 @@ import { NodeInOut } from '../audio/comps';
 import { useAnalyser } from '../audio/hooks';
 import { WithIn, WithOut } from '../audio/types';
 import { useBand } from '../instr/ctx';
-import { useGetTime, useRootCtx } from '../root/ctx';
+import { useGetTime } from '../root/ctx';
 
 const noteKeys = [
   'zsxdcvgbhnjm,l.;/',

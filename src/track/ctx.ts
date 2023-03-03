@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext } from "react";
-import { StageData } from "./types";
+import { createContext, useContext } from 'react';
+import { StageData } from './types';
 
 export const StageContext = createContext<StageData>(new StageData());
 

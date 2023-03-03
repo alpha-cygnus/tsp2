@@ -34,11 +34,11 @@ export class NamedMap<I, NI extends ItemSet<I>> {
     this.createItem = createItem;
   }
 
-  emitChange() {
-    this.events.emit('change');
+  emitChange(name: string) {
+    this.events.emit('change', name);
   }
 
-  onChange(cb: () => void): () => void {
+  onChange(cb: (name: string) => void): () => void {
     this.events.on('change', cb);
     return () => {
       this.events.off('change', cb);
@@ -56,10 +56,10 @@ export class NamedMap<I, NI extends ItemSet<I>> {
   add(name: string, i: I): () => void {
     const ip = this.get(name);
     const fin = ip.add(i);
-    this.emitChange();
+    this.emitChange(name);
     return () => {
       fin();
-      this.emitChange();
+      this.emitChange(name);
     };
   }
 

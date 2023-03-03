@@ -1,8 +1,7 @@
-import { O_RDWR } from 'constants';
 import {EventEmitter} from 'events';
 import { ItemSet, NamedMap, WithParam } from '../common/types';
 import { unreachable } from '../common/utils';
-import { ParamContextData, ParamProxy } from '../param/types';
+import { ParamContextData } from '../param/types';
 
 type VoiceEvent = 'start' | 'stop';
 
@@ -149,8 +148,6 @@ export class PolyInstrData implements AnyInstr {
 
   allocVoice(): VoiceData | null {
     const vs = [...this.voices].sort((a, b) => {
-      const ais = a.isStarted();
-      const bis = b.isStarted();
       if (a.isStarted()) {
         if (b.isStarted()) {
           return a.startedAt - b.startedAt;
@@ -215,7 +212,7 @@ export class PolyInstrData implements AnyInstr {
     console.log('POLY', time, ic, this.playing.size);
   }
 
-  paramVoices(name: string): VoiceData[] {
+  paramVoices(_name: string): VoiceData[] {
     return [...this.playing.values()];
   }
 

@@ -1,12 +1,13 @@
-import React, {useEffect, useMemo, ReactElement} from 'react';
+import React, {useEffect, useMemo, ReactElement, useState} from 'react';
 
 import {useACtx} from '../root/ctx';
 import {useAddParam} from '../param/ctx';
 
-import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType} from './types';
+import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType, BusData} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
-import {NodeInContext, useNodeIn} from './ctx';
-import {useConst, useDelay, useFilter, useGain, useNodeRef, useNoise, useOsc, usePan, useSimpleReverb} from './hooks';
+import {BusContext, NodeInContext, useBus, useNodeIn} from './ctx';
+import {useConst, useDelay, useFilter, useGain, useNoise, useOsc, usePan, useSimpleReverb} from './hooks';
+import { notNull } from '../common/utils';
 
 
 type ConnProps = {
@@ -65,21 +66,56 @@ export function NodeIn({node, children}: NodeInProps) {
   </>
 }
 
+type SendProps = {
+  node: AudioOut;
+  to: string;
+};
+
+export function Send({node, to}: SendProps) {
+  const bus = useBus();
+
+  useEffect(() => bus.add(to, node), [bus, to, node]);
+
+  return null;
+}
 
 type NodeOutProps = WithOut & {
   node: AudioOut;
 }
 
-export function NodeOut({node, nodeRef}: NodeOutProps) {
+export function NodeOut({node, nodeRef, send}: NodeOutProps) {
   const nodeIn = useNodeIn();
+  const actx = useACtx();
 
   useEffect(() => {
     if (nodeRef) nodeRef.current = node;
   }, [nodeRef, node]);
 
-  return makeConn(node, nodeIn);
-}
+  const sendNodes: Array<{node: AudioOut, to: string}> = useMemo(() => {
+    if (!send) return [];
+    const sends = Array.isArray(send) ? send : [send];
+    return sends.filter(notNull).map((s) => {
+      const m = s.match(/^(.*?):([+-]?\d+(\.\d+)?)$/);
+      let name: string;
+      let sendNode: AudioOut | GainNode;
+      if (m) {
+        name = m[1];
+        const gain = actx.createGain();
+        gain.gain.value = parseFloat(m[2]);
+        sendNode = gain;
+      } else {
+        name = s;
+        sendNode = node;
+      }
+      return {to: name, node: sendNode};
+    })
+  }, [send]);
 
+  return <>
+    {makeConn(node, nodeIn)}
+    {sendNodes.map(({node: n, to}) => <Send node={n} to={to} key={to} />)}
+  </>;
+}
 
 type NodeInOutProps = WithIn & WithOut & {
   node: AudioOut;
@@ -90,6 +126,33 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
     <NodeIn node={node}>{children}</NodeIn>
     <NodeOut node={node} nodeRef={nodeRef} />
   </>;
+}
+
+type RecvProps = {
+  from: string;
+};
+
+export function Recv({from}: RecvProps) {
+  const bus = useBus();
+  const [nodes, setNodes] = useState<AudioOut[]>([]);
+
+  const nodeIn = useNodeIn();
+
+  useEffect(() => {
+    const res: AudioOut[] = []
+    bus.onChange((name) => {
+      if (name !== from) return;
+
+      bus.withEach(from, (node) => {
+        res.push(node);
+      });
+    });
+    setNodes(res);
+  }, [bus]);
+
+  return <>
+    {nodes.map((out) => makeConn(out, nodeIn))}
+  </>
 }
 
 type ParamCBProps = {
@@ -165,11 +228,22 @@ export function ParamIn({param, children, name}: ParamInProps) {
 
   return <>
     <NodeIn node={param}>
-      {nodes}
+      {nodes.concat(ns.map((child) => <Recv key={child} from={child} />))}
     </NodeIn>
     {cbs.map((child, i) => <ParamCB key={i} param={param} cb={child} />)}
     {ns.map((child, i) => <ParamName key={i} param={param} name={child} />)}
   </>
+}
+
+type BusProps = {
+  children: any;
+}
+
+export function Bus({children}: BusProps) {
+  const [bus] = useState(() => new BusData());
+  return <BusContext.Provider value={bus}>
+    {children}
+  </BusContext.Provider>
 }
 
 
@@ -328,16 +402,15 @@ type EchoProps = WithIn & WithOut & {
 }
 
 export function Echo({children, time, feedback}: EchoProps) {
-  const srcRef = useNodeRef();
-  const delRef = useNodeRef();
-  return <>
-    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
-    <Gain nodeRef={delRef} gain={feedback || 0.5}>
+  return <Bus>
+    <Gain send="src" gain={1}>{children}</Gain>
+    <Gain send="del" gain={feedback || 0.5}>
       <DelayWet time={time}>
-        {[srcRef, delRef]}
+        <Recv from="src" />
+        <Recv from="del" />
       </DelayWet>
     </Gain>
-  </>;
+  </Bus>;
 }
 
 type PingPongProps = WithIn & WithOut & {
@@ -346,26 +419,24 @@ type PingPongProps = WithIn & WithOut & {
 }
 
 export function PingPong({children, time, feedback}: PingPongProps) {
-  const srcRef = useNodeRef();
-  const leftRef = useNodeRef();
-  const rightRef = useNodeRef();
-  return <>
-    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
+  return <Bus>
+    <Gain send="src" gain={1}>{children}</Gain>
     <Pan pan={-0.5}>
-      <Gain nodeRef={leftRef} gain={feedback || 0.5}>
+      <Gain send="left" gain={feedback || 0.5}>
         <DelayWet time={time}>
-          {[srcRef, rightRef]}
+          <Recv from="right" />
+          <Recv from="src" />
         </DelayWet>
       </Gain>
     </Pan>
     <Pan pan={0.5}>
-      <Gain nodeRef={rightRef} gain={feedback || 0.5}>
+      <Gain send="right" gain={feedback || 0.5}>
         <DelayWet time={time}>
-          {[leftRef,]}
+          <Recv from="left" />
         </DelayWet>
       </Gain>
     </Pan>
-  </>;
+  </Bus>;
 }
 
 type SimpleReverbProps = WithIn & WithOut & {
@@ -386,12 +457,10 @@ export function SimpleReverbWet({name, seconds, decay, reverse, ...rest}: Simple
 }
 
 export function SimpleReverb({children, ...rest}: SimpleReverbProps) {
-  const srcRef = useNodeRef();
-
-  return <>
-    <Gain nodeRef={srcRef} gain={1}>{children}</Gain>
+  return <Bus>
+    <Gain send="src" gain={1}>{children}</Gain>
     <SimpleReverbWet {...rest}>
-      {[srcRef,]}
+      <Recv from="src" />
     </SimpleReverbWet>
-  </>
+  </Bus>
 }

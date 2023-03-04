@@ -19,7 +19,11 @@ export function useConst() {
   const [node] = useState(() => actx.createConstantSource());
 
   useEffect(() => {
-    node.start();
+    try {
+      node.start();
+    } catch(e) {
+      console.warn('node restart', node);
+    }
     return () => node.stop();
   }, [node]);
 
@@ -35,7 +39,11 @@ export function useOsc(type: OscillatorType) {
   }, [node, type]);
 
   useEffect(() => {
-    node.start();
+    try {
+      node.start();
+    } catch(e) {
+      console.warn('node restart', node);
+    }
     return () => node.stop();
   }, [node]);
 
@@ -140,7 +148,11 @@ export function useNoise(type: NoiseType) {
   }, [node, type, actx]);
 
   useEffect(() => {
-    node.start();
+    try {
+      node.start();
+    } catch(e) {
+      console.warn('node restart', node);
+    }
     return () => {
       node.stop();
     }

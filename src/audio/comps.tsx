@@ -19,11 +19,11 @@ function Conn({from, to}: ConnProps) {
   useEffect(() => {
     if (!from) return;
     if (!to) return;
-    console.log('connect', getNodeId(from), '->', getNodeId(to));
+    // console.log('connect', getNodeId(from), '->', getNodeId(to));
     doConnect(from, to);
     return () => {
       doDisconnect(from, to);
-      console.log('disconnect', from, to);
+      // console.log('disconnect', from, to);
     };
   }, [from, to]);
   return null;
@@ -74,7 +74,9 @@ type SendProps = {
 export function Send({node, to}: SendProps) {
   const bus = useBus();
 
-  useEffect(() => bus.add(to, node), [bus, to, node]);
+  useEffect(() => {
+    return bus.add(to, node);
+  }, [bus, to, node]);
 
   return null;
 }
@@ -93,7 +95,9 @@ export function NodeOut({node, nodeRef, send}: NodeOutProps) {
 
   const sendNodes: Array<{node: AudioOut, to: string}> = useMemo(() => {
     if (!send) return [];
+    
     const sends = Array.isArray(send) ? send : [send];
+
     return sends.filter(notNull).map((s) => {
       const m = s.match(/^(.*?):([+-]?\d+(\.\d+)?)$/);
       let name: string;
@@ -107,8 +111,9 @@ export function NodeOut({node, nodeRef, send}: NodeOutProps) {
         name = s;
         sendNode = node;
       }
+
       return {to: name, node: sendNode};
-    })
+    });
   }, [send]);
 
   return <>
@@ -121,10 +126,10 @@ type NodeInOutProps = WithIn & WithOut & {
   node: AudioOut;
 }
 
-export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
+export function NodeInOut({node, children, ...rest}: NodeInOutProps) {
   return <>
     <NodeIn node={node}>{children}</NodeIn>
-    <NodeOut node={node} nodeRef={nodeRef} />
+    <NodeOut node={node} {...rest} />
   </>;
 }
 
@@ -139,16 +144,21 @@ export function Recv({from}: RecvProps) {
   const nodeIn = useNodeIn();
 
   useEffect(() => {
-    const res: AudioOut[] = []
-    bus.onChange((name) => {
-      if (name !== from) return;
-
+    const onChange = () => {
+      const res: AudioOut[] = []
       bus.withEach(from, (node) => {
         res.push(node);
       });
+
+      setNodes(res);
+    };
+
+    onChange();
+
+    return bus.onChange((name) => {
+      if (name === from) onChange();
     });
-    setNodes(res);
-  }, [bus]);
+  }, [bus, from]);
 
   return <>
     {nodes.map((out) => makeConn(out, nodeIn))}
@@ -223,7 +233,7 @@ export function ParamIn({param, children, name}: ParamInProps) {
   useEffect(() => {
     if (num != null || cbs.length || ns.length) param.value = num || 0;
     else param.value = param.defaultValue;
-    console.log('setting', name, getNodeId(param), '=', param.value, num);
+    // console.log('setting', name, getNodeId(param), '=', param.value, num);
   }, [num, cbs.length, param, name, ns.length]);
 
   return <>

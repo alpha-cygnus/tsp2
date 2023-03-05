@@ -12,7 +12,7 @@ export type NodeRef = {
 
 export type WithOut = {
   nodeRef?: NodeRef;
-  send?: string | string[];
+  sendTo?: string | string[];
 };
 
 export type WithInChild = React.ReactElement<any> | AudioOut | NodeRef | null;

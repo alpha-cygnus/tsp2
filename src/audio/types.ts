@@ -12,7 +12,7 @@ export type NodeRef = {
 
 export type WithOut = {
   nodeRef?: NodeRef;
-  sendTo?: string | string[];
+  sendTo?: string | Record<string, AParamProp>;
 };
 
 export type WithInChild = React.ReactElement<any> | AudioOut | NodeRef | null;
@@ -41,7 +41,9 @@ export class NodeProxy extends ItemSet<AudioOut> {
 }
 
 export class BusData extends NamedMap<AudioOut, NodeProxy> {
-  constructor() {
+  parent: BusData | null;
+  constructor(parent: BusData | null = null) {
     super((name) => new NodeProxy(name));
+    this.parent = parent;
   }
 }

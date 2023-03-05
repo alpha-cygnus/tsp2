@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb, SendRecv} from './audio/comps';
+import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb, SendRecv, Const, Recv, Send} from './audio/comps';
 import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
@@ -27,10 +27,13 @@ export function TestSyn({freq = 440}: {freq?: number}) {
 export function NoiseTest() {
   return (
     <ADSR name="e" a={0.001} d={0.1} s={0} r={0.1} max={0.3}>
-      <Filter type="highpass" frequency={10000} Q={10}>
+      <Filter type="highpass" frequency={10000} detune="halfDetune" Q={10}>
         <Noise type="white" />
       </Filter>
-      <Osc name="sgn" type="sine" />
+      <Cut>
+        <Gain gain={0.5} sendTo="halfDetune"><Const value="detune"/></Gain>
+      </Cut>
+      <Osc name="sgn" type="sine" detune="detune" />
     </ADSR>
   )
 }
@@ -61,13 +64,19 @@ function App() {
                 </PingPong>
               </Pan>
             </Gain>
-            <MonoInstr name="nTest" notePrio="last">
-              {/* <PingPong time={0.4}> */}
-              <SimpleReverb seconds={5} decay={5}>
+            <Gain name="noise-send-pp" sendTo="pingpong">
+              <MonoInstr name="nTest" notePrio="last">
                 <NoiseTest />
-              </SimpleReverb>
-              {/* </PingPong> */}
-            </MonoInstr>
+              </MonoInstr>
+            </Gain>
+            <SimpleReverb seconds={5} decay={5}>
+              <Recv from="reverb" />
+            </SimpleReverb>
+            <Send to="reverb">
+              <PingPong time={0.4}>
+                <Recv from="pingpong" />
+              </PingPong>
+            </Send>
           </Scope>
         </Destination>
         <Keys instrName="nTest" />

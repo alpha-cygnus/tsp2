@@ -6,7 +6,7 @@ import {useAddParam} from '../param/ctx';
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp, AParamCB, NoiseType, BusData} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {BusContext, NodeInContext, useBus, useNodeIn} from './ctx';
-import {useConst, useDelay, useFilter, useGain, useNoise, useOsc, usePan, useSimpleReverb} from './hooks';
+import {useConst, useDelay, useFilter, useGain, useNoise, useOsc, usePan, useSimpleReverb, useWaveShaper} from './hooks';
 
 
 type ConnProps = {
@@ -18,11 +18,11 @@ function Conn({from, to}: ConnProps) {
   useEffect(() => {
     if (!from) return;
     if (!to) return;
-    // console.log('connect', getNodeId(from), '->', getNodeId(to));
+    console.log('connect', getNodeId(from), '->', getNodeId(to));
     doConnect(from, to);
     return () => {
       doDisconnect(from, to);
-      // console.log('disconnect', from, to);
+      console.log('disconnect', from, to);
     };
   }, [from, to]);
   return null;
@@ -68,16 +68,36 @@ export function NodeIn({node, children}: NodeInProps) {
 type SendNodeProps = {
   node: AudioOut;
   to: string;
+  gain: AParamProp;
 };
 
-export function SendNode({node, to}: SendNodeProps) {
+export function SendNode({node, to, gain}: SendNodeProps) {
   const bus = useBus();
 
-  useEffect(() => {
-    return bus.add(to, node);
-  }, [bus, to, node]);
+  const actx = useACtx();
 
-  return null;
+  const noGain = gain == null || gain === 1;
+
+  const nodeSend = useMemo(() => {
+    if (noGain) return null;
+
+    const ns = actx.createGain();
+    ns.gain.value = 0;
+
+    return ns;
+  }, [node, noGain]);
+
+  useEffect(() => {
+    console.log('BUS.add', to, getNodeId(nodeSend || node));
+    return bus.add(to, nodeSend || node);
+  }, [bus, to, node, nodeSend]);
+
+  if (!nodeSend) return null;
+  
+  return <>
+    <ParamIn name="gain" param={nodeSend.gain}>{gain}</ParamIn>
+    {makeConn(node, nodeSend)}
+  </>;
 }
 
 type NodeOutProps = WithOut & {
@@ -91,11 +111,15 @@ export function NodeOut({node, nodeRef, sendTo}: NodeOutProps) {
     if (nodeRef) nodeRef.current = node;
   }, [nodeRef, node]);
 
-  const sends = asArray(sendTo);
+  const sends = useMemo((): Record<string, AParamProp> => {
+    if (!sendTo) return {};
+    if (typeof sendTo === 'string') return {[sendTo]: 1};
+    return sendTo;
+  }, [sendTo]);
 
   return <>
     {makeConn(node, nodeIn)}
-    {sends.map((to) => <SendNode node={node} to={to} key={to} />)}
+    {Object.keys(sends).map((to) => <SendNode node={node} to={to} key={to} gain={sends[to]} />)}
   </>;
 }
 
@@ -117,28 +141,12 @@ type SendProps = WithIn & WithOut & {
 
 export function Send({to, gain, children, ...rest}: SendProps) {
   const nodeSrc = useGain();
-  const actx = useACtx();
-
-  const noGain = gain == null;
-
-  const nodeSend = useMemo(() => {
-    if (noGain) return null;
-
-    const ns = actx.createGain();
-    ns.gain.value = 0;
-
-    return ns;
-  }, [nodeSrc, noGain]);
 
   return <>
     <NodeInOut node={nodeSrc} {...rest}>
       {children}
     </NodeInOut>
-    <SendNode node={nodeSend || nodeSrc} to={to} />
-    {nodeSend && <>
-      <ParamIn name="gain" param={nodeSend.gain}>{gain}</ParamIn>
-      {makeConn(nodeSrc, nodeSend)}
-    </>}
+    <SendNode node={nodeSrc} to={to} gain={gain} />
   </>;
 }
 
@@ -159,6 +167,7 @@ export function Recv({from}: RecvProps) {
         res.push(node);
       });
 
+      console.log('BUS.onChange', from, res.map((n) => getNodeId(n)), bus);
       setNodes(res);
     };
 
@@ -259,10 +268,19 @@ type BusProps = {
 }
 
 export function SendRecv({children}: BusProps) {
-  const [bus] = useState(() => new BusData());
+  const upBus = useBus();
+  const [bus] = useState(() => new BusData(upBus));
   return <BusContext.Provider value={bus}>
     {children}
-  </BusContext.Provider>
+  </BusContext.Provider>;
+}
+
+export function SendRecvPop({children}: BusProps) {
+  const bus = useBus();
+  
+  return <BusContext.Provider value={bus.parent || bus}>
+    {children}
+  </BusContext.Provider>;
 }
 
 
@@ -384,6 +402,30 @@ export function Pan({name, pan, ...rest}: PanProps) {
   </>;
 }
 
+type WaveShaperProps = WithOut & {
+  curve?: Float32Array | null | ((x: number) => number);
+  curveFuncDeltaX?: number;
+  oversample?: OverSampleType;
+};
+
+export function WaveShaper({curve: pCurve, curveFuncDeltaX, oversample = "none", ...rest}: WaveShaperProps) {
+  const curve = useMemo(() => {
+    if (typeof pCurve !== 'function') return pCurve;
+    let dx = curveFuncDeltaX || 0;
+    if (!(dx > 0)) dx = 0.01;
+    const len = Math.ceil(2 / dx);
+    const res = new Float32Array(len);
+    for (let i = 0; i < len - 1; i++) {
+      res[i] = pCurve(dx * i - 1);
+    }
+    res[len - 1] = pCurve(1);
+  }, [pCurve, curveFuncDeltaX]);
+
+  const node = useWaveShaper(curve, oversample);
+
+  return <NodeOut node={node} {...rest} />;
+}
+
 type NoiseProps = WithOut & {
   name?: string;
   type: NoiseType,
@@ -422,36 +464,34 @@ type EchoProps = WithIn & WithOut & {
 
 export function Echo({children, time, feedback = 0.5}: EchoProps) {
   return <SendRecv>
-    <Send to="del" gain={feedback}>{children}</Send>
-    <Send to="del" gain={feedback}>
-      <DelayWet time={time}>
-        <Recv from="del" />
-      </DelayWet>
-    </Send>
+    <Gain sendTo={{del: feedback}}>
+      <SendRecvPop>{children}</SendRecvPop>
+    </Gain>
+    <DelayWet time={time} sendTo={{del: feedback}}>
+      <Recv from="del" />
+    </DelayWet>
   </SendRecv>;
 }
 
-type PingPongProps = WithIn & WithOut & {
+type PingPongProps = WithIn & {
   time: AParamProp;
   feedback?: AParamProp;
 }
 
 export function PingPong({children, time, feedback = 0.5}: PingPongProps) {
   return <SendRecv>
-    <Send to="left" gain={feedback}>{children}</Send>
-    <Pan pan={-0.5}>
-      <Send to="right" gain={feedback}>
-        <DelayWet time={time}>
-          <Recv from="left" />
-        </DelayWet>
-      </Send>
+    <Gain sendTo={{left: feedback}}>
+      <SendRecvPop>{children}</SendRecvPop>
+    </Gain>
+    <Pan pan={-0.9}>
+      <DelayWet time={time} sendTo={{right: feedback}}>
+        <Recv from="left" />
+      </DelayWet>
     </Pan>
-    <Pan pan={0.5}>
-      <Send to="left" gain={feedback}>
-        <DelayWet time={time}>
-          <Recv from="right" />
-        </DelayWet>
-      </Send>
+    <Pan pan={0.9}>
+      <DelayWet time={time} sendTo={{left: feedback}}>
+        <Recv from="right" />
+      </DelayWet>
     </Pan>
   </SendRecv>;
 }
@@ -475,7 +515,9 @@ export function SimpleReverbWet({name, seconds, decay, reverse, ...rest}: Simple
 
 export function SimpleReverb({children, ...rest}: SimpleReverbProps) {
   return <SendRecv>
-    <Send to="rev">{children}</Send>
+    <Send to="rev">
+      <SendRecvPop>{children}</SendRecvPop>
+    </Send>
     <SimpleReverbWet {...rest}>
       <Recv from="rev" />
     </SimpleReverbWet>

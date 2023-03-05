@@ -82,6 +82,21 @@ export function usePan() {
   return node;
 }
 
+export function useWaveShaper(curve: Float32Array | null | undefined, oversample: OverSampleType) {
+  const actx = useACtx();
+  const [node] = useState(() => actx.createWaveShaper());
+
+  useEffect(() => {
+    node.curve = curve || null;
+  }, [node, curve]);
+
+  useEffect(() => {
+    node.oversample = oversample;
+  }, [node, oversample]);
+
+  return node;
+}
+
 const noiseCache: Record<NoiseType, {actx: BaseAudioContext, buf: AudioBuffer} | null> = {
   white: null,
   pink: null,

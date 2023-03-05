@@ -31,7 +31,7 @@ export function NoiseTest() {
         <Noise type="white" />
       </Filter>
       <Cut>
-        <Gain gain={0.5} sendTo="halfDetune"><Const value="detune"/></Gain>
+        <Gain gain={0.2} sendTo="halfDetune"><Const value="detune"/></Gain>
       </Cut>
       <Osc name="sgn" type="sine" detune="detune" />
     </ADSR>

@@ -38,6 +38,10 @@ export function Keys({instrName}: KeysProps) {
 
   const [pressed] = useState(() => new Set<number>());
 
+  const prevOn = useRef(0);
+  const bpm = 150;
+  const npb = 1/4;
+
   useEffect(() => {
     const onNoteKey = (e: KeyboardEvent, cb: (note: number, time: number) => void) => {
       if (e.key in keyToNote) {
@@ -50,6 +54,20 @@ export function Keys({instrName}: KeysProps) {
         if (pressed.has(note)) return;
         pressed.add(note);
         instr.cmd(time, {on: {note, vel: 1}});
+        const ct = getTime();
+        const dt = ct - prevOn.current;
+        prevOn.current = ct;
+        if (dt < 10) {
+          let nl = dt / 60 * bpm * npb;
+          let dv = 16;
+          nl = Math.round(nl * dv);
+          while (nl % 2 === 0) {
+            dv /= 2;
+            nl /= 2;
+          }
+          console.log('P: skip(', nl, '/', dv, ');');
+        }
+        console.log('P: I.', instrName, '.note(', note, ')');
       });
       if (e.key === '[') {
         setBaseNote(baseNote - 12);

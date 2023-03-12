@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NodeInOut } from '../audio/comps';
+import { NodeInOut } from '../audio/core';
 import { useAnalyser } from '../audio/hooks';
 import { WithIn, WithOut } from '../audio/types';
 import { useBand } from '../instr/ctx';

@@ -7,7 +7,7 @@ export type PttrnFunc = (runCount: number) => void;
 export type PttrnId = string | number;
 
 export type ICmd = { icmd: { ins: string, cmd: InstrCmd } };
-export type Bpm = { bpm: number };
+export type Bpm = { bpm: { bpm: number, beatLen: number} };
 export type Pttrn = { pttrn: { id: PttrnId, repeat?: number, stop?: number }};
 export type PttrnStart = { pttrnStart: { id: PttrnId }};
 export type PttrnEnd = { pttrnEnd: { id: PttrnId }};
@@ -48,6 +48,7 @@ export type PrecookedPttrn = {
 
 export type CookedPttrn = {
   bpm: number;
+  beatLen: number;
   len: number;
   seq: Timed<CookedItem>[];
 };

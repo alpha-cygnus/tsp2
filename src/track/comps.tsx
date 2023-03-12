@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Gain, Pan } from "../audio/comps";
-import { WithIn, WithOut } from "../audio/types";
-import { ParamContext } from "../param/ctx";
-import { useStage } from "./ctx";
-import { TrackData } from "./types";
+import { useEffect, useState } from 'react';
+import { Gain, Pan } from '../audio/basic';
+import { WithIn, WithOut } from '../audio/types';
+import { ParamContext } from '../param/ctx';
+import { useStage } from './ctx';
+import { TrackData } from './types';
 
 type TrackProps = WithIn & WithOut & {
   name: string;

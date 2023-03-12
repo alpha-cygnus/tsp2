@@ -75,7 +75,6 @@ class InsApi {
 
 type Skip = {
   (t: number): void;
-  note: (t: number) => void;
 }
 
 function makeSkip(): Skip {
@@ -83,10 +82,7 @@ function makeSkip(): Skip {
     const ctx = getCurrentPttrnContext();
     ctx.updT(t => t + dt);
   };
-  
-  _skip.note = (t: number) => _skip(t * 4);
-
-  return _skip;
+    return _skip;
 }
 
 export const skip = makeSkip();

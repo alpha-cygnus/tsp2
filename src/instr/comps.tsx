@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Const, Gain } from '../audio/comps';
+import { Const, Gain } from '../audio/basic';
 import { WithInChildren, WithOut } from '../audio/types';
 import { ParamContext } from '../param/ctx';
 import {PolyInstrContext, useBand, usePolyInstr, VoiceContext} from './ctx';

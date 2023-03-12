@@ -1,42 +1,15 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, Destination, Gain, Pan, Noise, PingPong, SimpleReverb, SendRecv, Const, Recv, Send} from './audio/comps';
-import { ADSR, MonoInstr, PolyInstr } from './instr/comps';
+import { Destination, Gain, Pan } from './audio/basic';
+import { Recv, Send } from './audio/core';
+import { PingPong, SimpleReverb } from './audio/fx';
+import { NoisePing, TriSaw } from './audio/synth';
+import { MonoInstr, PolyInstr } from './instr/comps';
 import { I, skip, T } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
 import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
 
-
-export function TestSyn({freq = 440}: {freq?: number}) {
-  return <SendRecv>
-    <ADSR name="env" a={0.01} d={0.1} s={0.9} r={0.5} max={0.3}>
-      <Filter type="lowpass" detune={<ADSR a={0.1} d={0.6} s={0} r={0.5} max={10000} />}>
-        <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={['lfo', 'detune']} />
-        <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={['lfo', 'detune']} />
-      </Filter>
-      <Cut>
-        <ADSR name="lfo" a={0.5} d={1} s={1} r={0.5} max={30} delay={0.7} sendTo="lfo">
-          <Osc type="sine" frequency={4} />
-        </ADSR>
-      </Cut>
-    </ADSR>
-  </SendRecv>;
-}
-
-export function NoiseTest() {
-  return (
-    <ADSR name="e" a={0.001} d={0.1} s={0} r={0.1} max={0.3}>
-      <Filter type="highpass" frequency={10000} detune="halfDetune" Q={10}>
-        <Noise type="white" />
-      </Filter>
-      <Cut>
-        <Gain gain={0.2} sendTo="halfDetune"><Const value="detune"/></Gain>
-      </Cut>
-      <Osc name="sgn" type="sine" detune="detune" />
-    </ADSR>
-  )
-}
 
 function App() {
   const [playing, setPlaying] = useState(false);
@@ -59,14 +32,14 @@ function App() {
               <Pan pan="pan">
                 <PingPong time={0.4}>
                   <PolyInstr name="test" voices={8}>
-                    <TestSyn />
+                    <TriSaw />
                   </PolyInstr>
                 </PingPong>
               </Pan>
             </Gain>
             <Gain name="noise-send-pp" sendTo="pingpong">
               <MonoInstr name="nTest" notePrio="last">
-                <NoiseTest />
+                <NoisePing />
               </MonoInstr>
             </Gain>
             <SimpleReverb seconds={5} decay={5}>
@@ -84,8 +57,8 @@ function App() {
           {() => {
             T.main.param.pan = (t) => Math.sin(t*10);
             for (let i = 0; i < 16; i++) {
-              I.test.note(60 + i, 1/5);
-              skip(0.25);
+              I.test.note(60 + i, 1/32);
+              skip(1/16);
             }
           }}
         </Pttrn>
@@ -93,7 +66,7 @@ function App() {
           {() => {
             for (let i = 0; i < 16; i++) {
               I.nTest.note(60 - i, 1/32, i % 4 ? 0.3 : 1);
-              skip.note(1/16);
+              skip(1/16);
             }
           }}
         </Pttrn>

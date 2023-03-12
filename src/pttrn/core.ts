@@ -69,7 +69,7 @@ export function precookPttrn(pttrn: PttrnFunc, runCount: number, ctx: PttrnRunCo
   }
 }
 
-export function cookPttrn(pttrns: PttrnsData, name: string, startBpm: number): CookedPttrn {
+export function cookPttrn(pttrns: PttrnsData, name: string, startBpm: number, startBeatLen = 1/4): CookedPttrn {
   const rawSeq: Timed<PrecookedItem>[] = [];
   let tickMax = 0;
 
@@ -124,16 +124,20 @@ export function cookPttrn(pttrns: PttrnsData, name: string, startBpm: number): C
   let ct = 0;
   let pt = 0;
   let bpm = startBpm;
+  let beatLen = startBeatLen;
   const seq: Timed<CookedItem>[] = [];
 
   const sorted = rawSeq.sort(([a], [b]) => a - b);
 
-  const toSec = (dt: number) => dt * 60 / bpm;
+  const toSec = (dt: number) => dt * 60 / beatLen / bpm;
 
   for (const [tick, item] of sorted) {
     if (tick > tickMax) break;
 
-    if ('bpm' in item) bpm = item.bpm;
+    if ('bpm' in item) {
+      bpm = item.bpm.bpm;
+      beatLen = item.bpm.beatLen;
+    }
 
     ct += toSec(tick - pt);
 
@@ -148,6 +152,7 @@ export function cookPttrn(pttrns: PttrnsData, name: string, startBpm: number): C
 
   return {
     bpm,
+    beatLen,
     seq,
     len: ct + toSec(tickMax - pt),
   }

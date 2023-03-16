@@ -9,7 +9,11 @@ import { I, skip, T } from './pttrn/api';
 import { Play, Pttrn } from './pttrn/comps';
 import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
+import { eu } from './pttrn/utils';
 
+
+// @ts-ignore
+window.E = eu;
 
 function App() {
   const [playing, setPlaying] = useState(false);

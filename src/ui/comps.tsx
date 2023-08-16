@@ -25,7 +25,7 @@ type KeysProps = {
 export function Keys({instrName}: KeysProps) {
   const band = useBand();
   const getTime = useGetTime();
-  
+
   const instr = useMemo(() => {
     return band.get(instrName);
   }, [band, instrName]);
@@ -50,7 +50,9 @@ export function Keys({instrName}: KeysProps) {
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
+      console.log('oKD', e);
       onNoteKey(e, (note, time) => {
+        console.log('oNK', e, note, time);
         if (pressed.has(note)) return;
         pressed.add(note);
         instr.cmd(time, {on: {note, vel: 1}});

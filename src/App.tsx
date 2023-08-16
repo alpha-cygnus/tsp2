@@ -11,6 +11,9 @@ import { TSPRoot } from './root/comps';
 import { Keys, Scope } from './ui/comps';
 import { eu } from './pttrn/utils';
 
+import * as BS from './rtfm/gram.pc';
+
+window.BS = BS;
 
 // @ts-ignore
 window.E = eu;
@@ -56,7 +59,7 @@ function App() {
             </Send>
           </Scope>
         </Destination>
-        <Keys instrName="nTest" />
+        {/* <Keys instrName="nTest" /> */}
         <Pttrn name="test">
           {() => {
             T.main.param.pan = (t) => Math.sin(t*10);

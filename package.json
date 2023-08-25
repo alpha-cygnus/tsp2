@@ -9,7 +9,8 @@
     "immer": "^9.0.12",
     "lodash": "^4.17.20",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "regl": "^2.1.0"
   },
   "scripts": {
     "start": "parcel src/index.html",

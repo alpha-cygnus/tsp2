@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { Destination, Gain, Pan } from './audio/basic';
 import { Recv, Send } from './audio/core';
@@ -12,7 +12,10 @@ import { Keys, Scope } from './ui/comps';
 import { eu } from './pttrn/utils';
 
 import * as BS from './rtfm/gram.pc';
+import { Rgl } from './gl/rgl';
+import { TestSwiss } from './gl/test-swiss';
 
+// @ts-ignore
 window.BS = BS;
 
 // @ts-ignore
@@ -36,13 +39,13 @@ function App() {
         <Destination>
           <Scope>
             <Gain gain={0.2}>
-              <Pan pan="pan">
-                <PingPong time={0.4}>
+              <PingPong time={0.4}>
+                <Pan pan="pan">
                   <PolyInstr name="test" voices={8}>
                     <TriSaw />
                   </PolyInstr>
-                </PingPong>
-              </Pan>
+                </Pan>
+              </PingPong>
             </Gain>
             <Gain name="noise-send-pp" sendTo="pingpong">
               <MonoInstr name="nTest" notePrio="last">
@@ -82,6 +85,8 @@ function App() {
           <Play name="test" />
         </>}
       </TSPRoot>
+      <Rgl />
+      <TestSwiss />
     </>
   );
 }
